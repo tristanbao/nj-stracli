@@ -8,6 +8,18 @@ import { useApp } from '../store';
 export default function Reports({ anchor }: { anchor?: string }) {
   const { route, user, scopedGroups, nav } = useApp();
   const [tab, setTab] = useState('north');
+  const [aiText, setAiText] = useState('');
+  const [aiTime, setAiTime] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const genAi = () => {
+    setAiLoading(true);
+    window.setTimeout(() => {
+      const weak = [...NORTH_DRIVERS].sort((a, b) => a.pct - b.pct).slice(0, 2).map((d) => `${d.key}${d.pct}%`).join('、');
+      setAiText(`FPA综合份额 ${NORTH_STAR.fpaShare.actual}%（目标 ${NORTH_STAR.fpaShare.target}%），FPA余额 ${NORTH_STAR.fpaBal.actual} 亿，EVA ${NORTH_STAR.eva.actual} 亿。\n驱动达成率最低：${weak}；负债与资产投放相对稳健。\n建议优先补短板驱动缺口，资源向在途重大项目倾斜。`);
+      setAiTime(new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }));
+      setAiLoading(false);
+    }, 600);
+  };
   if (anchor === 'price' || route.startsWith('price')) {
     return (
       <div>
@@ -73,19 +85,29 @@ export default function Reports({ anchor }: { anchor?: string }) {
               <Col span={14}>
                 <Card size="small" type="inner" title="北极星趋势 · 份额（主线）+ 余额（底座）+ EVA（底线）">
                   <NorthStarTrendChart branch={isBranch} />
-                  <div style={{ fontSize: 11.5, color: '#888' }}>解读：份额上行但未达目标 → 缺口在投行综合化（78%）与生态渗透（77%），资源向承销与N端/B端倾斜；EVA同步上行说明渗透未牺牲价值（RAROC 14.2%守住15%目标86%分位）。分行视角自动切换为辖内口径。</div>
+                  <div style={{ fontSize: 11.5, color: '#888' }}>红线=FPA综合份额 · 蓝区=FPA余额 · 金柱=EVA · 虚线=年度目标</div>
                 </Card>
               </Col>
               <Col span={10}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <b style={{ fontSize: 12 }}>四大驱动 · 指标状态</b>
+                  <Button size="small" loading={aiLoading} onClick={genAi}>AI解读</Button>
+                </div>
                 <Table
                   size="small" pagination={false} rowKey="key" dataSource={NORTH_DRIVERS}
                   columns={[
-                    { title: '驱动', dataIndex: 'key', width: 90, render: (v: string) => <b>{v}</b> },
-                    { title: '达成', dataIndex: 'pct', width: 90, render: (v: number) => <span><Progress percent={v} size="small" style={{ width: 60 }} /> {v}%</span> },
-                    { title: '缺口→动作→资源', render: (_, r) => { const m = r as unknown as { gap: string; action: string; resource: string; owner: string }; return <span style={{ fontSize: 12 }}><span style={{ color: '#b01f24' }}>{m.gap}</span><br />{m.action}<br /><span style={{ color: '#888' }}>资源：{m.resource} · {m.owner}</span></span>; } },
+                    { title: '驱动', dataIndex: 'key', width: 100, render: (v: string) => <b>{v}</b> },
+                    { title: '实际 / 目标', render: (_, r) => { const m = r as unknown as { actual: string; target: string }; return <span style={{ fontSize: 12 }}>{m.actual}<br /><span style={{ color: '#888' }}>→ {m.target}</span></span>; } },
+                    { title: '达成', dataIndex: 'pct', width: 100, render: (v: number, r) => <span><Progress percent={v} size="small" style={{ width: 60 }} /> {v}%<br /><span style={{ fontSize: 11, color: '#888' }}>{(r as { yoy: string }).yoy}</span></span> },
+                    { title: '状态', dataIndex: 'level', width: 60, render: (v: string) => <Tag color={v === '偏弱' ? 'orange' : 'green'}>{v}</Tag> },
                   ]}
                 />
-                <div style={{ fontSize: 11.5, color: '#888', marginTop: 6 }}>调整逻辑：哪个驱动达成率最低 → 下月资源与督办就压向哪里（如生态77% → 属地协同5:5分润 + 团金进场排期）。点击驱动行可穿透到商机/督办（演示：消息提示）。</div>
+                {aiText && (
+                  <div style={{ marginTop: 8, border: '1px dashed #b7791f', borderRadius: 8, padding: 8, background: '#fffdf5' }}>
+                    <div style={{ fontSize: 11, color: '#b7791f' }}>AI解读 · {aiTime} <a onClick={() => setAiText('')} style={{ marginLeft: 6 }}>收起</a></div>
+                    <div style={{ fontSize: 12, marginTop: 4, whiteSpace: 'pre-line' }}>{aiText}</div>
+                  </div>
+                )}
               </Col>
             </Row>
           )}
@@ -99,7 +121,7 @@ export default function Reports({ anchor }: { anchor?: string }) {
                     columns={[
                       { title: '维度', dataIndex: 'dim', width: 130 },
                       { title: '达成率', dataIndex: 'score', width: 220, render: (v: number, r) => <Progress percent={v} size="small" strokeColor={(r as { color: string }).color} /> },
-                      { title: '短板 → 调整', render: (_, r) => { const d = (r as { dim: string }).dim; const m = PERF_SYSTEM.find((x) => x.dim === d)!; const weak = [...(m.metrics as Array<{ name: string; actual: number; target: number; good?: string }>)].sort((a, b) => (a.good === 'low' ? a.target / a.actual : a.actual / a.target) - (b.good === 'low' ? b.target / b.actual : b.actual / b.target))[0]; return <span style={{ fontSize: 12 }}>{weak.name}（{Math.round(Math.min(1, weak.good === 'low' ? weak.target / weak.actual : weak.actual / weak.target) * 100)}%）→ {d === '投行与综合化' ? '压中票/ABS发行窗口' : d === '客群与生态' ? '压N端开户与团金进场' : d === '价值创造' ? '压非息中收' : d === '规模与份额' ? '压司库归行与银团提款' : d === '协同与效率' ? '压协同合约落地' : '压预警闭环'}</span>; } },
+                      { title: '短板指标', render: (_, r) => { const d = (r as { dim: string }).dim; const m = PERF_SYSTEM.find((x) => x.dim === d)!; const weak = [...(m.metrics as Array<{ name: string; actual: number; target: number; good?: string }>)].sort((a, b) => (a.good === 'low' ? a.target / a.actual : a.actual / a.target) - (b.good === 'low' ? b.target / b.actual : b.actual / b.target))[0]; return <span style={{ fontSize: 12 }}>{weak.name}（{Math.round(Math.min(1, weak.good === 'low' ? weak.target / weak.actual : weak.actual / weak.target) * 100)}%）</span>; } },
                     ]}
                   />
                 </Col>

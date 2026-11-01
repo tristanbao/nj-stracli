@@ -18,6 +18,18 @@ export default function Home() {
   const [lv, setLv] = useState<string>('');
   const [openId, setOpenId] = useState<string | null>(null);
   const [dim, setDim] = useState<string | null>(null);
+  const [aiText, setAiText] = useState('');
+  const [aiTime, setAiTime] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const genAi = () => {
+    setAiLoading(true);
+    window.setTimeout(() => {
+      const weak = [...NORTH_DRIVERS].sort((a, b) => a.pct - b.pct).slice(0, 2).map((d) => d.key).join('、');
+      setAiText(`FPA综合份额 ${ns.share}%（目标 ${ns.shareTarget}%），达成 ${Math.round((ns.share / ns.shareTarget) * 100)}%，FPA余额 ${ns.bal} 亿，EVA ${ns.eva} 亿守住价值底线。\n短板在${weak}（达成率均低于80%），负债与资产投放相对稳健。\n建议优先补投行承销与生态渗透缺口，资源向在途重大项目倾斜。`);
+      setAiTime(new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }));
+      setAiLoading(false);
+    }, 600);
+  };
 
   const isBranch = user?.id === 'branch';
   const branchName = isBranch ? user?.dept ?? '南京分行' : '';
@@ -96,19 +108,26 @@ export default function Home() {
             <div style={{ fontSize: 11.5, color: '#888', textAlign: 'center' }}>红线=FPA综合份额（左轴）· 蓝区=FPA余额（右轴）· 金柱=EVA · 虚线=年度目标，反映渗透现状与价值底线是否同步上行</div>
           </Col>
           <Col span={7}>
-            <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 6 }}>缺口 → 动作 → 资源（指导调整与分配）</div>
-            {NORTH_DRIVERS.map((d) => (
-              <div key={d.key} style={{ border: '1px solid #eef1f6', borderRadius: 8, padding: 7, marginBottom: 7 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <b style={{ fontSize: 12 }}>{d.key}</b><Tag color={d.pct >= 85 ? 'green' : d.pct >= 80 ? 'blue' : 'orange'}>{d.pct}%</Tag>
-                </div>
-                <Progress percent={d.pct} size="small" showInfo={false} style={{ margin: '4px 0' }} />
-                <div style={{ fontSize: 11, color: '#b01f24' }}>{d.gap}</div>
-                <div style={{ fontSize: 11, color: '#333', marginTop: 2 }}>{d.action}</div>
-                <div style={{ fontSize: 11, color: '#888' }}>资源：{d.resource}</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+              <b style={{ fontSize: 12 }}>四大驱动 · 指标状态</b>
+              <Button size="small" loading={aiLoading} onClick={genAi}>AI解读</Button>
+            </div>
+            <Table
+              size="small" pagination={false} rowKey="key" dataSource={NORTH_DRIVERS}
+              columns={[
+                { title: '驱动', dataIndex: 'key', width: 82, render: (v: string) => <b style={{ fontSize: 12 }}>{v}</b> },
+                { title: '达成', dataIndex: 'pct', width: 76, render: (v: number, r) => <span><Progress percent={v} size="small" showInfo={false} /><span style={{ fontSize: 11 }}>{v}% · {(r as { yoy: string }).yoy}</span></span> },
+                { title: '状态', dataIndex: 'level', width: 56, render: (v: string) => <Tag color={v === '偏弱' ? 'orange' : 'green'}>{v}</Tag> },
+              ]}
+            />
+            <div style={{ fontSize: 11, color: '#888', marginTop: 6 }}>实际 / 目标见完整看板；状态按达成率与目标偏离自动标注。</div>
+            {aiText && (
+              <div style={{ marginTop: 8, border: '1px dashed #b7791f', borderRadius: 8, padding: 8, background: '#fffdf5' }}>
+                <div style={{ fontSize: 11, color: '#b7791f' }}>AI解读 · {aiTime} <a onClick={() => setAiText('')} style={{ marginLeft: 6 }}>收起</a></div>
+                <div style={{ fontSize: 12, marginTop: 4, whiteSpace: 'pre-line' }}>{aiText}</div>
               </div>
-            ))}
-            <Button size="small" type="primary" block onClick={() => nav('rep-rpt')}>进入完整经营看板（含六维/五篇大文章/预测） →</Button>
+            )}
+            <Button size="small" type="primary" block style={{ marginTop: 8 }} onClick={() => nav('rep-rpt')}>进入完整经营看板（含六维/五篇大文章/预测） →</Button>
           </Col>
         </Row>
       </Card>
