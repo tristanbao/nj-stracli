@@ -1,9 +1,9 @@
-import { Button, Card, Col, Input, Progress, Row, Select, Space, Statistic, Table, Tag, Tooltip, message } from 'antd';
+import { Button, Card, Col, Input, Progress, Row, Select, Space, Table, Tag, Tooltip, message } from 'antd';
 import { QuestionCircleOutlined } from '@ant-design/icons';
-import { BRANCH_RANK, GROUPS, MAJOR_PROJECTS, PERF_SYSTEM } from '../data';
+import { BRANCH_RANK, GROUPS, MAJOR_PROJECTS, NORTH_DRIVERS, NORTH_STAR, PERF_SYSTEM } from '../data';
 import { useApp } from '../store';
 import { useMemo, useState } from 'react';
-import { DimAchieveChart, FiveChart, ForecastChart, StructChart, TrendChart } from '../components/Charts';
+import { DimAchieveChart, FiveChart, ForecastChart, NorthStarTrendChart, StructChart, TrendChart } from '../components/Charts';
 import { PerfOverview } from './Supervise';
 import CustomerDrawer from '../components/CustomerDrawer';
 
@@ -32,17 +32,14 @@ export default function Home() {
     [isBranch, branchGroups, scopedGroups, q, lv],
   );
 
+  const branchFpa = Math.round(branchGroups.reduce((s, g) => s + g.fpa, 0) * 10) / 10;
   const branchEva = Math.round(branchGroups.reduce((s, g) => s + g.eva, 0) / 100) / 100;
-  const branchDep = Math.round(branchGroups.reduce((s, g) => s + g.deposit, 0) * 10) / 10;
-
-  const kpis = isBranch
-    ? [
-        [`${branchName}战客`, `${branchGroups.length} 户`, `总行级 ${branchGroups.filter((g) => g.level === '总行级').length} · 分行级 ${branchGroups.filter((g) => g.level === '分行级').length}`],
-        ['本行EVA', `${branchEva} 亿`, '+8.4% · 序时 86%'], ['存款日均', `${branchDep} 亿`, '+5.1%'],
-        ['本行重大项目', `${branchProjects.length} 个`, `${branchProjects.filter((p) => p.pendings.some((x) => x.st === '逾期')).length} 项逾期`],
-        ['协同落地率', '64%', '待提升 · 2项待承接'], ['预警户', `${branchGroups.filter((g) => g.risk === '预警').length} 户`, '压降中'],
-      ]
-    : [['战略集团', '86 户', '总行级 38 · 分行级 48'], ['EVA', '6.80 亿', '目标 8 亿 · 85%'], ['非息占比', '28.6%', '目标 32%'], ['口袋份额', '18% · 22%', '+1.2pct'], ['商机转化率', '34%', '目标 40%'], ['不良率', '0.62%', '优于目标']];
+  const branchShare = branchGroups.length
+    ? Math.round(branchGroups.reduce((s, g) => s + (g.pocketL + g.pocketA) / 2, 0) / branchGroups.length * 10) / 10
+    : 0;
+  const ns = isBranch
+    ? { share: branchShare, shareTarget: 19.5, bal: branchFpa, balTarget: 220, eva: branchEva, evaTarget: Math.round(branchEva / 0.85 * 10) / 10, nonRate: 27.4, bad: 0.58 }
+    : { share: NORTH_STAR.fpaShare.actual, shareTarget: NORTH_STAR.fpaShare.target, bal: NORTH_STAR.fpaBal.actual, balTarget: NORTH_STAR.fpaBal.target, eva: NORTH_STAR.eva.actual, evaTarget: NORTH_STAR.eva.target, nonRate: NORTH_STAR.nonRate.actual, bad: NORTH_STAR.bad.actual };
 
   return (
     <div>
@@ -56,18 +53,65 @@ export default function Home() {
           )}
         </Space>
       </Card>
-      <Row gutter={10} align="stretch">
-        {kpis.map((k) => (
-          <Col span={4} key={k[0]} style={{ display: 'flex' }}>
-            <Card size="small" style={{ borderTop: `3px solid ${isBranch ? '#2456a6' : '#b01f24'}`, flex: 1 }}>
-              <Statistic
-                title={k[0] === '口袋份额' ? (<span>口袋份额 <Tooltip title="招行《一户一策指引》：负债=我行自营存款日均/客户货币资金；资产=我行FPA/客户有息负债。"><QuestionCircleOutlined /></Tooltip></span>) : k[0]}
-                value={k[1]} valueStyle={{ fontSize: 20, whiteSpace: 'nowrap' }} suffix={<span style={{ fontSize: 11 }}>{k[2]}</span>}
-              />
-            </Card>
+
+      {/* 北极星英雄区：FPA综合份额挂帅 + EVA/RAROC守底线 + 四大驱动分解 */}
+      <Card
+        size="small"
+        style={{ borderTop: `3px solid ${isBranch ? '#2456a6' : '#b01f24'}` }}
+        title={
+          <span>
+            北极星 · 战客综合金融渗透度（FPA口径）
+            <Tooltip title="招行《一户一策指引》8项核心经营数据：营收/净利息/非息/FPA/存款/负债口袋/贷款/资产口袋。FPA综合份额=（负债口袋+资产口袋）/2，负债=我行自营存款日均/客户货币资金，资产=我行FPA/客户有息负债。主指标看份额渗透（综合化），EVA+RAROC守价值底线。"><QuestionCircleOutlined style={{ marginLeft: 6, color: '#888' }} /></Tooltip>
+          </span>
+        }
+        extra={<span style={{ display: 'flex', gap: 8 }}><Tag color="blue">全行 {isBranch ? branchGroups.length : 86} 户</Tag><Button size="small" type="primary" onClick={() => nav('rep-rpt')}>更多 → 完整经营看板</Button></span>}
+      >
+        <Row gutter={12}>
+          <Col span={7}>
+            <div style={{ textAlign: 'center', padding: '6px 0' }}>
+              <div style={{ fontSize: 12, color: '#888' }}>FPA综合份额 · 实际 / 目标</div>
+              <div style={{ fontSize: 34, fontWeight: 800, color: '#b01f24', lineHeight: 1.1 }}>{ns.share}<span style={{ fontSize: 16 }}>%</span><span style={{ fontSize: 13, color: '#888', fontWeight: 400 }}> / {ns.shareTarget}%</span></div>
+              <Progress percent={Math.round((ns.share / ns.shareTarget) * 100)} strokeColor="#b01f24" style={{ maxWidth: 260, margin: '6px auto' }} />
+              <div style={{ fontSize: 12, color: '#555' }}>达成 {Math.round((ns.share / ns.shareTarget) * 100)}% · 同比 +1.1pct · 缺口 {(ns.shareTarget - ns.share).toFixed(1)}pct</div>
+              <div style={{ display: 'flex', gap: 8, marginTop: 10, textAlign: 'left' }}>
+                <div style={{ flex: 1, background: '#f7f9fc', borderRadius: 8, padding: 8 }}>
+                  <div style={{ fontSize: 11, color: '#888' }}>FPA余额</div><b>{ns.bal} 亿</b><div style={{ fontSize: 11, color: '#888' }}>目标 {ns.balTarget} 亿</div>
+                </div>
+                <div style={{ flex: 1, background: '#f7f9fc', borderRadius: 8, padding: 8 }}>
+                  <div style={{ fontSize: 11, color: '#888' }}>EVA（价值底线）</div><b>{ns.eva} 亿</b><div style={{ fontSize: 11, color: '#888' }}>目标 {ns.evaTarget} 亿</div>
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: 8, marginTop: 8, textAlign: 'left' }}>
+                <div style={{ flex: 1, background: '#f7f9fc', borderRadius: 8, padding: 8 }}>
+                  <div style={{ fontSize: 11, color: '#888' }}>负债 / 资产口袋</div><b>{isBranch ? `${Math.round(branchGroups.reduce((s, g) => s + g.pocketL, 0) / Math.max(1, branchGroups.length))}% / ${Math.round(branchGroups.reduce((s, g) => s + g.pocketA, 0) / Math.max(1, branchGroups.length))}%` : '18% / 22%'}</b><div style={{ fontSize: 11, color: '#888' }}>目标 20% / 25%</div>
+                </div>
+                <div style={{ flex: 1, background: '#f7f9fc', borderRadius: 8, padding: 8 }}>
+                  <div style={{ fontSize: 11, color: '#888' }}>非息占比 · 不良率</div><b>{ns.nonRate}% · {ns.bad}%</b><div style={{ fontSize: 11, color: '#888' }}>目标 32% · ≤0.8%</div>
+                </div>
+              </div>
+            </div>
           </Col>
-        ))}
-      </Row>
+          <Col span={10}>
+            <NorthStarTrendChart branch={isBranch} />
+            <div style={{ fontSize: 11.5, color: '#888', textAlign: 'center' }}>红线=FPA综合份额（左轴）· 蓝区=FPA余额（右轴）· 金柱=EVA · 虚线=年度目标，反映渗透现状与价值底线是否同步上行</div>
+          </Col>
+          <Col span={7}>
+            <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 6 }}>缺口 → 动作 → 资源（指导调整与分配）</div>
+            {NORTH_DRIVERS.map((d) => (
+              <div key={d.key} style={{ border: '1px solid #eef1f6', borderRadius: 8, padding: 7, marginBottom: 7 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <b style={{ fontSize: 12 }}>{d.key}</b><Tag color={d.pct >= 85 ? 'green' : d.pct >= 80 ? 'blue' : 'orange'}>{d.pct}%</Tag>
+                </div>
+                <Progress percent={d.pct} size="small" showInfo={false} style={{ margin: '4px 0' }} />
+                <div style={{ fontSize: 11, color: '#b01f24' }}>{d.gap}</div>
+                <div style={{ fontSize: 11, color: '#333', marginTop: 2 }}>{d.action}</div>
+                <div style={{ fontSize: 11, color: '#888' }}>资源：{d.resource}</div>
+              </div>
+            ))}
+            <Button size="small" type="primary" block onClick={() => nav('rep-rpt')}>进入完整经营看板（含六维/五篇大文章/预测） →</Button>
+          </Col>
+        </Row>
+      </Card>
 
       <div style={{ marginTop: 10 }}><PerfOverview onPick={(d) => setDim(dim === d ? null : d)} picked={dim} /></div>
       {dim && (() => {

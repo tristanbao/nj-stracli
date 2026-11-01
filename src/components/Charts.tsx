@@ -357,6 +357,45 @@ export function ForecastChart() {
   return <div ref={ref} style={{ height: 230 }} />;
 }
 
+/** 北极星趋势：FPA综合份额（主线）+ FPA余额（面积）+ EVA（柱），反映渗透现状与价值底线 */
+export function NorthStarTrendChart({ branch }: { branch?: boolean }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const chart = echarts.init(el);
+    // 分行口径：整体下调约2pct / 余额按辖内占比演示
+    const share = branch
+      ? [13.8, 14.2, 14.6, 15.0, 15.4, 15.8, 16.1, 16.4, 16.6, 16.8, 17.0, 17.2]
+      : [16.2, 16.6, 17.0, 17.4, 17.8, 18.2, 18.6, 19.0, 19.3, 19.6, 19.8, 20.0];
+    const bal = branch
+      ? [120, 126, 132, 138, 144, 150, 156, 162, 168, 174, 180, 186]
+      : [380, 395, 410, 425, 440, 455, 468, 480, 492, 502, 512, 520];
+    const eva = branch
+      ? [1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2]
+      : [3.8, 4.0, 4.2, 4.5, 4.8, 5.0, 5.4, 5.7, 6.0, 6.3, 6.5, 6.8];
+    chart.setOption({
+      grid: { left: 44, right: 44, top: 34, bottom: 26 },
+      legend: { top: 0, textStyle: { fontSize: 11 } },
+      tooltip: { trigger: 'axis' },
+      xAxis: { type: 'category', data: ['11月', '12月', '1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月'] },
+      yAxis: [
+        { type: 'value', name: '% / 亿', splitLine: { lineStyle: { color: '#eef1f6' } } },
+        { type: 'value', name: 'FPA余额(亿)', splitLine: { show: false } },
+      ],
+      series: [
+        { name: 'FPA综合份额%', type: 'line', smooth: true, data: share, lineStyle: { color: '#b01f24', width: 2.8 }, itemStyle: { color: '#b01f24' }, markLine: { silent: true, symbol: 'none', lineStyle: { color: '#b01f24', type: 'dashed' }, label: { fontSize: 10, formatter: '目标 22.5%' }, data: [{ yAxis: 22.5 }] } },
+        { name: 'FPA余额(亿)', type: 'line', smooth: true, yAxisIndex: 1, data: bal, lineStyle: { color: '#2456a6', width: 2 }, itemStyle: { color: '#2456a6' }, areaStyle: { color: '#2456a6', opacity: 0.08 } },
+        { name: 'EVA(亿)', type: 'bar', data: eva, itemStyle: { color: '#c9a45c', borderRadius: [3, 3, 0, 0], opacity: 0.85 }, barWidth: 10 },
+      ],
+    });
+    const onResize = () => chart.resize();
+    window.addEventListener('resize', onResize);
+    return () => { window.removeEventListener('resize', onResize); chart.dispose(); };
+  }, [branch]);
+  return <div ref={ref} style={{ height: 250 }} />;
+}
+
 /** 全行协同网络：主办 - 属地合约金额 */
 export function CoopChart() {  const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {

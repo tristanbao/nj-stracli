@@ -427,6 +427,41 @@ export const PERF_SYSTEM = [
   },
 ];
 
+/** 北极星 · 战客综合金融渗透度（FPA 口径）：对公综合金融的引导性指标
+ * 定义：FPA综合份额 =（负债口袋份额 + 资产口袋份额）/ 2；FPA余额为月均余额口径
+ * 来源：招行《一户一策指引》8项核心经营数据（营收/净利息/非息/FPA/存款/负债口袋/贷款/资产口袋）
+ * 逻辑：主指标看份额渗透（现状），EVA+RAROC守价值底线（质量），四大驱动可分解到行动与资源
+ */
+export const NORTH_STAR = {
+  name: '战客综合金融渗透度',
+  formula: 'FPA综合份额 =（负债口袋份额 + 资产口袋份额）/ 2',
+  fpaShare: { actual: 20.0, target: 22.5, unit: '%', yoy: '+1.1pct' },
+  fpaBal: { actual: 520, target: 600, unit: '亿', yoy: '+8.8%' },
+  liability: { actual: 18, target: 20, unit: '%', yoy: '+1.2pct' },
+  asset: { actual: 22, target: 25, unit: '%', yoy: '+0.9pct' },
+  eva: { actual: 6.8, target: 8.0, unit: '亿', yoy: '+11.2%' },
+  raroc: { actual: 14.2, target: 15, unit: '%', yoy: '+0.6pct' },
+  nonRate: { actual: 28.6, target: 32, unit: '%', yoy: '+1.8pct' },
+  revenue: { actual: 76, target: 90, unit: '亿', yoy: '+9.4%' },
+  bad: { actual: 0.62, target: 0.8, unit: '%', yoy: '-0.08pct' },
+};
+
+/** 北极星12个月趋势（演示口径，与经营趋势同源） */
+export const NORTH_HISTORY = {
+  months: ['11月', '12月', '1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月'],
+  fpaShare: [16.2, 16.6, 17.0, 17.4, 17.8, 18.2, 18.6, 19.0, 19.3, 19.6, 19.8, 20.0],
+  fpaBal: [380, 395, 410, 425, 440, 455, 468, 480, 492, 502, 512, 520],
+  eva: [3.8, 4.0, 4.2, 4.5, 4.8, 5.0, 5.4, 5.7, 6.0, 6.3, 6.5, 6.8],
+};
+
+/** 北极星四大驱动：缺口 → 关键动作 → 资源投向（指导经营调整与资源分配） */
+export const NORTH_DRIVERS = [
+  { key: '负债组织', actual: '612 亿 / 18%', target: '700 亿 / 20%', pct: 87, gap: '存款缺口 88 亿 · 口袋差 2pct', action: '司库归集 + 募集资金归行（先声 8.6 亿、南瑞中票资金沉淀）', resource: '交易银行CBS · 运营极速开户 · 定价（协定利率）', owner: '交易银行部 + 南京分行' },
+  { key: '资产投放', actual: '438 亿 / 22%', target: '500 亿 / 25%', pct: 88, gap: '贷款缺口 62 亿 · 口袋差 3pct', action: '银团提款（南钢 12 亿）+ 供应链1端直贷 + N端确权', resource: '授信绿色通道 · 资金营运定价（LPR-15bp）', owner: '授信审批部 + 属地行' },
+  { key: '投行综合化', actual: '承销 86 亿 · 非息 28.6%', target: '承销 110 亿 · 非息 32%', pct: 78, gap: '承销缺口 24 亿 · 非息差 3.4pct', action: '南瑞中票 10 亿簿记 + 苏交科 ABS 5 亿 + 撮合中收', resource: '投资银行部 · 资金营运做市 · 托管部', owner: '投资银行部' },
+  { key: '生态渗透', actual: 'N端 326 户 · B端 71%', target: 'N端 420 户 · B端 80%', pct: 77, gap: 'N端缺口 94 户 · B端差 9pct', action: 'N端白名单批量开户 + 团金进场（恒瑞 1.1 万人、途牛 3000 人）', resource: '属地协同（5:5分润）· 零售团金 · 手机银行场景', owner: '属地行 + 零售部' },
+];
+
 /** 数据权限：不同岗位可见的集团范围（模拟行内数据权限模型） */
 export function visibleGroups(u: User): Group[] {
   if (u.id === 'branch') return GROUPS.filter((g) => g.branch === '南京分行');
