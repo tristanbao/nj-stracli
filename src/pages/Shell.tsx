@@ -18,7 +18,7 @@ const NAV_TREE = [
     group: '指挥塔',
     children: [
       { key: 'home', label: '全局总览' },
-      { key: 'perf', label: '实绩总览 · 六维' },
+      { key: 'perf', label: '实绩总览' },
       { key: 'sup-task', label: '重大项目督办' },
       { key: 'sup-coop', label: '协同调度' },
     ],

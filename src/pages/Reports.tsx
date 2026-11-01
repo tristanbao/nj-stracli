@@ -4,10 +4,14 @@ import { useState } from 'react';
 import { BRANCH_RANK, GROUPS, NORTH_DRIVERS, NORTH_STAR, PERF_SYSTEM, dimScores } from '../data';
 import { BizChart, DimAchieveChart, DimRadar, FiveChart, ForecastChart, NorthStarTrendChart } from '../components/Charts';
 import { useApp } from '../store';
+import CustomerDrawer from '../components/CustomerDrawer';
+import DriverBreakdown, { type DriverKey } from '../components/DriverBreakdown';
 
 export default function Reports({ anchor }: { anchor?: string }) {
   const { route, user, scopedGroups, nav } = useApp();
   const [tab, setTab] = useState('north');
+  const [drv, setDrv] = useState<DriverKey>('负债组织');
+  const [openId, setOpenId] = useState<string | null>(null);
   const [aiText, setAiText] = useState('');
   const [aiTime, setAiTime] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
@@ -37,7 +41,6 @@ export default function Reports({ anchor }: { anchor?: string }) {
     );
   }
 
-  // 完整经营看板（首页北极星 → 更多）：FPA牵引 + 六维 + 集团分层 + 预测
   if (route === 'rep-rpt') {
     const isBranch = user?.id === 'branch';
     const groups = isBranch ? scopedGroups : GROUPS;
@@ -49,15 +52,15 @@ export default function Reports({ anchor }: { anchor?: string }) {
       <div>
         <Card
           size="small"
-          title={<span>战客经营分析看板 · 完整指标体系 <Tooltip title="口径：招行《一户一策指引》8项核心经营数据（营业净收入/净利息/非息/FPA/存款/负债口袋/贷款/资产口袋）+ 行方需求13-18（EVA/营收/存贷/投行/五篇大文章/商机）。主线=FPA综合份额（综合化渗透），底线=EVA+RAROC+不良率（价值与质量）。"><QuestionCircleOutlined style={{ marginLeft: 6, color: '#888' }} /></Tooltip></span>}
-          extra={<span style={{ display: 'flex', gap: 8 }}><Button size="small" onClick={() => nav('home')}>回首页北极星</Button><Button size="small" type="primary" onClick={() => message.success('看板已导出（含集团分层明细）')}>导出</Button></span>}
+          title={<span>经营分析看板</span>}
+          extra={<span style={{ display: 'flex', gap: 8 }}><Button size="small" onClick={() => nav('home')}>返回总览</Button><Button size="small" type="primary" onClick={() => message.success('看板已导出')}>导出</Button></span>}
         >
           <Row gutter={10}>
             {[
-              { k: 'FPA综合份额（北极星）', v: isBranch ? `${share}%` : `${NORTH_STAR.fpaShare.actual}%`, s: isBranch ? '目标 19.5% · 口径=(负债+资产)/2' : `目标 ${NORTH_STAR.fpaShare.target}% · 缺口 ${(NORTH_STAR.fpaShare.target - NORTH_STAR.fpaShare.actual).toFixed(1)}pct`, pct: isBranch ? Math.round((share / 19.5) * 100) : Math.round((NORTH_STAR.fpaShare.actual / NORTH_STAR.fpaShare.target) * 100), c: '#b01f24' },
-              { k: 'FPA余额（规模底座）', v: isBranch ? `${fpaBal} 亿` : `${NORTH_STAR.fpaBal.actual} 亿`, s: isBranch ? '辖内余额 · 目标 220 亿' : `目标 ${NORTH_STAR.fpaBal.target} 亿 · 同比 +8.8%`, pct: isBranch ? Math.round((fpaBal / 220) * 100) : Math.round((NORTH_STAR.fpaBal.actual / NORTH_STAR.fpaBal.target) * 100), c: '#2456a6' },
-              { k: 'EVA（价值底线）', v: isBranch ? `${eva} 亿` : `${NORTH_STAR.eva.actual} 亿`, s: isBranch ? '辖内价值 · 序时 86%' : `目标 ${NORTH_STAR.eva.target} 亿 · 同比 +11.2%`, pct: isBranch ? 86 : Math.round((NORTH_STAR.eva.actual / NORTH_STAR.eva.target) * 100), c: '#b7791f' },
-              { k: '非息占比（综合化）', v: `${NORTH_STAR.nonRate.actual}%`, s: `目标 ${NORTH_STAR.nonRate.target}% · 发债/撮合驱动`, pct: Math.round((NORTH_STAR.nonRate.actual / NORTH_STAR.nonRate.target) * 100), c: '#17815f' },
+              { k: 'FPA综合份额', v: isBranch ? `${share}%` : `${NORTH_STAR.fpaShare.actual}%`, s: isBranch ? '目标 19.5%' : `目标 ${NORTH_STAR.fpaShare.target}%`, pct: isBranch ? Math.round((share / 19.5) * 100) : Math.round((NORTH_STAR.fpaShare.actual / NORTH_STAR.fpaShare.target) * 100), c: '#b01f24' },
+              { k: 'FPA余额', v: isBranch ? `${fpaBal} 亿` : `${NORTH_STAR.fpaBal.actual} 亿`, s: isBranch ? '目标 220 亿' : `目标 ${NORTH_STAR.fpaBal.target} 亿`, pct: isBranch ? Math.round((fpaBal / 220) * 100) : Math.round((NORTH_STAR.fpaBal.actual / NORTH_STAR.fpaBal.target) * 100), c: '#2456a6' },
+              { k: 'EVA', v: isBranch ? `${eva} 亿` : `${NORTH_STAR.eva.actual} 亿`, s: isBranch ? '序时 86%' : `目标 ${NORTH_STAR.eva.target} 亿`, pct: isBranch ? 86 : Math.round((NORTH_STAR.eva.actual / NORTH_STAR.eva.target) * 100), c: '#b7791f' },
+              { k: '非息占比', v: `${NORTH_STAR.nonRate.actual}%`, s: `目标 ${NORTH_STAR.nonRate.target}%`, pct: Math.round((NORTH_STAR.nonRate.actual / NORTH_STAR.nonRate.target) * 100), c: '#17815f' },
             ].map((x) => (
               <Col span={6} key={x.k}>
                 <Card size="small" type="inner" style={{ borderTop: `3px solid ${x.c}`, textAlign: 'center' }}>
@@ -74,13 +77,14 @@ export default function Reports({ anchor }: { anchor?: string }) {
             onChange={setTab}
             style={{ marginTop: 8 }}
             items={[
-              { key: 'north', label: '北极星分解（缺口→动作→资源）' },
-              { key: 'six', label: '六维指标体系' },
-              { key: 'groups', label: '集团分层（86户）' },
-              { key: 'forward', label: '预测与投向' },
+              { key: 'north', label: '北极星分解' },
+              { key: 'six', label: '实绩总览' },
+              { key: 'groups', label: '集团分层' },
+              { key: 'forward', label: '预测投向' },
             ]}
           />
           {tab === 'north' && (
+            <div>
             <Row gutter={10}>
               <Col span={14}>
                 <Card size="small" type="inner" title="北极星趋势 · 份额（主线）+ 余额（底座）+ EVA（底线）">
@@ -90,13 +94,14 @@ export default function Reports({ anchor }: { anchor?: string }) {
               </Col>
               <Col span={10}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                  <b style={{ fontSize: 12 }}>四大驱动 · 指标状态</b>
+                  <b style={{ fontSize: 12 }}>四大驱动 · 指标状态（点击穿透）</b>
                   <Button size="small" loading={aiLoading} onClick={genAi}>AI解读</Button>
                 </div>
                 <Table
                   size="small" pagination={false} rowKey="key" dataSource={NORTH_DRIVERS}
+                  onRow={(r) => ({ onClick: () => setDrv((r as { key: DriverKey }).key), style: { cursor: 'pointer', background: (r as { key: string }).key === drv ? '#fff7e6' : undefined } })}
                   columns={[
-                    { title: '驱动', dataIndex: 'key', width: 100, render: (v: string) => <b>{v}</b> },
+                    { title: '驱动', dataIndex: 'key', width: 100, render: (v: string) => <b>{v}{v === drv ? ' ◀' : ''}</b> },
                     { title: '实际 / 目标', render: (_, r) => { const m = r as unknown as { actual: string; target: string }; return <span style={{ fontSize: 12 }}>{m.actual}<br /><span style={{ color: '#888' }}>→ {m.target}</span></span>; } },
                     { title: '达成', dataIndex: 'pct', width: 100, render: (v: number, r) => <span><Progress percent={v} size="small" style={{ width: 60 }} /> {v}%<br /><span style={{ fontSize: 11, color: '#888' }}>{(r as { yoy: string }).yoy}</span></span> },
                     { title: '状态', dataIndex: 'level', width: 60, render: (v: string) => <Tag color={v === '偏弱' ? 'orange' : 'green'}>{v}</Tag> },
@@ -110,6 +115,9 @@ export default function Reports({ anchor }: { anchor?: string }) {
                 )}
               </Col>
             </Row>
+            <DriverBreakdown driver={drv} onDriver={setDrv} onOpen={setOpenId} />
+            <CustomerDrawer openId={openId} onClose={() => setOpenId(null)} />
+            </div>
           )}
           {tab === 'six' && (
             <div>
@@ -179,7 +187,7 @@ export default function Reports({ anchor }: { anchor?: string }) {
 
   return (
     <div>
-      <Card size="small" title="集团经营合作分析" extra={<span style={{ display: 'flex', gap: 8 }}><Button size="small" type="primary" onClick={() => nav('rep-rpt')}>更多 → 完整经营看板</Button><Button size="small" onClick={() => message.success('已按统一模板导出')}>导出模板</Button></span>}>
+      <Card size="small" title="集团经营合作分析" extra={<span style={{ display: 'flex', gap: 8 }}><Button size="small" type="primary" onClick={() => nav('rep-rpt')}>经营分析看板</Button><Button size="small" onClick={() => message.success('已按统一模板导出')}>导出模板</Button></span>}>
         <Row gutter={10}>
           <Col span={12}><BizChart /></Col>
           <Col span={12}>

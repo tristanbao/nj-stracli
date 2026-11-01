@@ -59,7 +59,37 @@ export const OPPORTUNITIES: Opportunity[] = [
   { id: 'o20', title: '南瑞海外EPC保函 2 亿（丢单）', group: '国电南瑞集团', groupId: 'g2', category: '非公开', stage: '已失败', priority: '中', amount: '2 亿', owner: '王经理', update: '10-08 客户选择国有大行', created: '08-15', due: '10-08', daysLeft: 0, progress: 0, isNew: false, source: '拜访挖掘', contact: '董秘', nextStep: '复盘 · 3个月后再触达', lossReason: '授信额度不足 + 境外行无代理行优势' },
 ];
 
-/** 关键人库（联系方式脱敏 + 贡献积分 + 审批状态） */
+/** 线索池：来源广泛（接触/邮件/电话/转介/存量/推送），先验证后转商机 */
+export const LEAD_POOL = [
+  { id: 'l1', title: '南瑞储能电站陪访纪要：业主拟新増 6 亿项目贷', group: '国电南瑞集团', groupId: 'g2', channel: '客户拜访', finder: '王经理', time: '10-22 15:30', content: '储能事业部透露 Q4 有 6 亿项目贷需求，已约财务总监下周确认窗口', verify: '已验证', oppId: 'o3b' },
+  { id: 'l2', title: '电话：先声董秘问 8.6 亿归行账户是否要预留大额通道', group: '先声药业集团', groupId: 'g3', channel: '电话', finder: '赵经理', time: '10-27 09:12', content: '董秘来电确认归行最后一笔 3 亿路径，顺带问司库招标评分偏好', verify: '已验证', oppId: 'o2' },
+  { id: 'l3', title: '邮件：无锡属地转来南钢汽配 3 家确权名单', group: '南京钢铁集团', groupId: 'g1', channel: '邮件', finder: '李经理', time: '10-20 11:04', content: '属地行邮件转确权企业名单 3 家，需求：开户+确权链 2 亿', verify: '已验证', oppId: 'o1c' },
+  { id: 'l4', title: '接触：恒瑞子公司行政提代发升级后私行开户意向 40 人', group: '恒瑞医药集团', groupId: 'g13', channel: '现场接触', finder: '沈经理', time: '10-29 16:00', content: '宣讲会现场登记 40 人有私行一对一意向，已建群跟进', verify: '已验证', oppId: 'o12b' },
+  { id: 'l5', title: '总行推送：交控 REITs 底层资产清单更新', group: '江苏交通控股集团', groupId: 'g10', channel: '总行推送', finder: '系统推送', time: '10-23 10:00', content: '战客部推送底层收费权清单 v3，缺 2 个路段确权数据', verify: '待验证', oppId: 'o9' },
+  { id: 'l6', title: '电话：苏交科财务问 ABS 增信是否可用母公司担保', group: '苏交科集团', groupId: 'g5', channel: '电话', finder: '周经理', time: '10-21 14:20', content: '客户主动问增信结构，需投行+风控 48h 内给答复', verify: '验证中', oppId: 'o6' },
+  { id: 'l7', title: '拜访：沙钢资金部提 15 亿银团续作想压价 10bp', group: '沙钢集团', groupId: 'g14', channel: '客户拜访', finder: '张经理', time: '10-20 10:30', content: '资金部明确续作+压价诉求，已约风险预审', verify: '已验证', oppId: 'o13' },
+  { id: 'l8', title: 'N端转介：熊猫链属小微客户问批量开户政策', group: '熊猫电子集团', groupId: 'g4', channel: 'N端转介', finder: '刘经理', time: '10-19 09:00', content: '1端转介 6 户小微，需求开户+结算，需属地 1 周内上门', verify: '待验证', oppId: 'o7' },
+];
+
+/** 商机认定规则：4 项硬门槛 + 评分，全部通过才允许分派 */
+export const RECOGNITION_RULES = [
+  { id: 'r1', name: '需求真实', desc: '客户方已确认：金额区间 + 预计窗口 + 业务种类', check: (o: Opportunity) => !!(o.amount && o.amount !== '—' && o.due) },
+  { id: 'r2', name: '决策链可达', desc: '已触达财务总监及以上或董秘，且 48h 纪要有记录', check: (o: Opportunity) => !!(o.contact || (o.update ?? '').includes('财务') || (o.update ?? '').includes('董秘')) },
+  { id: 'r3', name: '可行初筛', desc: '授信/合规/额度无一票否决，或已列明缓释条件', check: (o: Opportunity) => o.stage !== '已失败' },
+  { id: 'r4', name: '信息完整', desc: '金额 / 决策人 / 下一步 / 预计关闭四项齐全', check: (o: Opportunity) => !!(o.amount && o.contact && o.nextStep && o.due) },
+];
+
+/** 提级标准：满足任一条即建议提级为重大项目 */
+export const ESCALATION_RULES = [
+  '金额 ≥5 亿或代发 ≥3000 人等规模门槛',
+  '跨 2 家以上分行或 3 个以上部门协同',
+  '需行长/董事长关注或总对总推动',
+  '窗口紧急（≤30 天）且失败影响份额/EVA',
+];
+
+/** 阶段流转口径：线索 → 认定 → 分派 → 拜访 → 方案/产品组合 → 项目 → 提级/赢单 */
+export const PIPELINE_STAGES = ['线索', '认定', '分派', '拜访', '方案/组合', '项目形成', '提级/结果'];
+
 export const KEY_PERSONS: Record<string, KeyPerson[]> = {
   g1: [
     { id: 'k11', name: '陈董', post: '董事长', dept: '集团', phone: '138****8821', masked: '138****8821', coverage: '年度互访', contributor: '张经理 +20', points: 20, approved: '已公开' },

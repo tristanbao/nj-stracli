@@ -6,6 +6,7 @@ import { useMemo, useState } from 'react';
 import { DimAchieveChart, FiveChart, ForecastChart, NorthStarTrendChart, StructChart, TrendChart } from '../components/Charts';
 import { PerfOverview } from './Supervise';
 import CustomerDrawer from '../components/CustomerDrawer';
+import DriverBreakdown, { type DriverKey } from '../components/DriverBreakdown';
 
 /**
  * 行长驾驶舱：总行行长 vs 分行行长视角区分
@@ -17,6 +18,7 @@ export default function Home() {
   const [q, setQ] = useState('');
   const [lv, setLv] = useState<string>('');
   const [openId, setOpenId] = useState<string | null>(null);
+  const [drv, setDrv] = useState<DriverKey>('负债组织');
   const [dim, setDim] = useState<string | null>(null);
   const [aiText, setAiText] = useState('');
   const [aiTime, setAiTime] = useState('');
@@ -72,25 +74,25 @@ export default function Home() {
         style={{ borderTop: `3px solid ${isBranch ? '#2456a6' : '#b01f24'}` }}
         title={
           <span>
-            北极星 · 战客综合金融渗透度（FPA口径）
-            <Tooltip title="招行《一户一策指引》8项核心经营数据：营收/净利息/非息/FPA/存款/负债口袋/贷款/资产口袋。FPA综合份额=（负债口袋+资产口袋）/2，负债=我行自营存款日均/客户货币资金，资产=我行FPA/客户有息负债。主指标看份额渗透（综合化），EVA+RAROC守价值底线。"><QuestionCircleOutlined style={{ marginLeft: 6, color: '#888' }} /></Tooltip>
+            北极星指标
+            <Tooltip title="FPA综合份额=（负债口袋份额+资产口袋份额）/2；负债=我行自营存款日均/客户货币资金，资产=我行FPA/客户有息负债。"><QuestionCircleOutlined style={{ marginLeft: 6, color: '#888' }} /></Tooltip>
           </span>
         }
-        extra={<span style={{ display: 'flex', gap: 8 }}><Tag color="blue">全行 {isBranch ? branchGroups.length : 86} 户</Tag><Button size="small" type="primary" onClick={() => nav('rep-rpt')}>更多 → 完整经营看板</Button></span>}
+        extra={<span style={{ display: 'flex', gap: 8 }}><Tag color="blue">全行 {isBranch ? branchGroups.length : 86} 户</Tag><Button size="small" type="primary" onClick={() => nav('rep-rpt')}>经营分析看板</Button></span>}
       >
         <Row gutter={12}>
           <Col span={7}>
             <div style={{ textAlign: 'center', padding: '6px 0' }}>
-              <div style={{ fontSize: 12, color: '#888' }}>FPA综合份额 · 实际 / 目标</div>
+              <div style={{ fontSize: 12, color: '#888' }}>FPA综合份额</div>
               <div style={{ fontSize: 34, fontWeight: 800, color: '#b01f24', lineHeight: 1.1 }}>{ns.share}<span style={{ fontSize: 16 }}>%</span><span style={{ fontSize: 13, color: '#888', fontWeight: 400 }}> / {ns.shareTarget}%</span></div>
               <Progress percent={Math.round((ns.share / ns.shareTarget) * 100)} strokeColor="#b01f24" style={{ maxWidth: 260, margin: '6px auto' }} />
-              <div style={{ fontSize: 12, color: '#555' }}>达成 {Math.round((ns.share / ns.shareTarget) * 100)}% · 同比 +1.1pct · 缺口 {(ns.shareTarget - ns.share).toFixed(1)}pct</div>
+              <div style={{ fontSize: 12, color: '#555' }}>达成 {Math.round((ns.share / ns.shareTarget) * 100)}% · 同比 +1.1pct</div>
               <div style={{ display: 'flex', gap: 8, marginTop: 10, textAlign: 'left' }}>
                 <div style={{ flex: 1, background: '#f7f9fc', borderRadius: 8, padding: 8 }}>
                   <div style={{ fontSize: 11, color: '#888' }}>FPA余额</div><b>{ns.bal} 亿</b><div style={{ fontSize: 11, color: '#888' }}>目标 {ns.balTarget} 亿</div>
                 </div>
                 <div style={{ flex: 1, background: '#f7f9fc', borderRadius: 8, padding: 8 }}>
-                  <div style={{ fontSize: 11, color: '#888' }}>EVA（价值底线）</div><b>{ns.eva} 亿</b><div style={{ fontSize: 11, color: '#888' }}>目标 {ns.evaTarget} 亿</div>
+                  <div style={{ fontSize: 11, color: '#888' }}>EVA</div><b>{ns.eva} 亿</b><div style={{ fontSize: 11, color: '#888' }}>目标 {ns.evaTarget} 亿</div>
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 8, marginTop: 8, textAlign: 'left' }}>
@@ -98,39 +100,41 @@ export default function Home() {
                   <div style={{ fontSize: 11, color: '#888' }}>负债 / 资产口袋</div><b>{isBranch ? `${Math.round(branchGroups.reduce((s, g) => s + g.pocketL, 0) / Math.max(1, branchGroups.length))}% / ${Math.round(branchGroups.reduce((s, g) => s + g.pocketA, 0) / Math.max(1, branchGroups.length))}%` : '18% / 22%'}</b><div style={{ fontSize: 11, color: '#888' }}>目标 20% / 25%</div>
                 </div>
                 <div style={{ flex: 1, background: '#f7f9fc', borderRadius: 8, padding: 8 }}>
-                  <div style={{ fontSize: 11, color: '#888' }}>非息占比 · 不良率</div><b>{ns.nonRate}% · {ns.bad}%</b><div style={{ fontSize: 11, color: '#888' }}>目标 32% · ≤0.8%</div>
+                  <div style={{ fontSize: 11, color: '#888' }}>非息占比</div><b>{ns.nonRate}%</b><div style={{ fontSize: 11, color: '#888' }}>目标 32%</div>
                 </div>
               </div>
             </div>
           </Col>
           <Col span={10}>
             <NorthStarTrendChart branch={isBranch} />
-            <div style={{ fontSize: 11.5, color: '#888', textAlign: 'center' }}>红线=FPA综合份额（左轴）· 蓝区=FPA余额（右轴）· 金柱=EVA · 虚线=年度目标，反映渗透现状与价值底线是否同步上行</div>
           </Col>
           <Col span={7}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-              <b style={{ fontSize: 12 }}>四大驱动 · 指标状态</b>
+              <b style={{ fontSize: 12 }}>驱动指标</b>
               <Button size="small" loading={aiLoading} onClick={genAi}>AI解读</Button>
             </div>
             <Table
               size="small" pagination={false} rowKey="key" dataSource={NORTH_DRIVERS}
+              onRow={(r) => ({ onClick: () => setDrv((r as { key: DriverKey }).key), style: { cursor: 'pointer', background: (r as { key: string }).key === drv ? '#fff7e6' : undefined } })}
               columns={[
-                { title: '驱动', dataIndex: 'key', width: 82, render: (v: string) => <b style={{ fontSize: 12 }}>{v}</b> },
+                { title: '驱动', dataIndex: 'key', width: 82, render: (v: string) => <b style={{ fontSize: 12 }}>{v}{v === drv ? ' ◀' : ''}</b> },
                 { title: '达成', dataIndex: 'pct', width: 76, render: (v: number, r) => <span><Progress percent={v} size="small" showInfo={false} /><span style={{ fontSize: 11 }}>{v}% · {(r as { yoy: string }).yoy}</span></span> },
                 { title: '状态', dataIndex: 'level', width: 56, render: (v: string) => <Tag color={v === '偏弱' ? 'orange' : 'green'}>{v}</Tag> },
               ]}
             />
-            <div style={{ fontSize: 11, color: '#888', marginTop: 6 }}>实际 / 目标见完整看板；状态按达成率与目标偏离自动标注。</div>
+            <div style={{ fontSize: 11, color: '#888', marginTop: 6 }}>点击某驱动，下方即按层级 / 分行 / 到户穿透；实际 / 目标见经营分析看板。</div>
             {aiText && (
               <div style={{ marginTop: 8, border: '1px dashed #b7791f', borderRadius: 8, padding: 8, background: '#fffdf5' }}>
                 <div style={{ fontSize: 11, color: '#b7791f' }}>AI解读 · {aiTime} <a onClick={() => setAiText('')} style={{ marginLeft: 6 }}>收起</a></div>
                 <div style={{ fontSize: 12, marginTop: 4, whiteSpace: 'pre-line' }}>{aiText}</div>
               </div>
             )}
-            <Button size="small" type="primary" block style={{ marginTop: 8 }} onClick={() => nav('rep-rpt')}>进入完整经营看板（含六维/五篇大文章/预测） →</Button>
+            <Button size="small" type="primary" block style={{ marginTop: 8 }} onClick={() => nav('rep-rpt')}>经营分析看板</Button>
           </Col>
         </Row>
       </Card>
+
+      <DriverBreakdown driver={drv} onDriver={setDrv} onOpen={setOpenId} />
 
       <div style={{ marginTop: 10 }}><PerfOverview onPick={(d) => setDim(dim === d ? null : d)} picked={dim} /></div>
       {dim && (() => {
@@ -138,7 +142,7 @@ export default function Home() {
         type M = { name: string; actual: number; target: number; unit: string; yoy: string; src: string; good?: string };
         const ms = d.metrics as unknown as M[];
         return (
-          <Card size="small" title={`${dim} · 指标明细（可视化）${isBranch ? `（${branchName}口径）` : '（全行口径）'}`} style={{ marginTop: 10 }} extra={<span style={{ display: 'flex', gap: 8 }}><Button size="small" onClick={() => setDim(null)}>收起</Button><Button size="small" type="primary" onClick={() => nav('perf')}>进入六维明细页 →</Button></span>}>
+          <Card size="small" title={`${dim} · 指标明细`} style={{ marginTop: 10 }} extra={<span style={{ display: 'flex', gap: 8 }}><Button size="small" onClick={() => setDim(null)}>收起</Button><Button size="small" type="primary" onClick={() => nav('perf')}>实绩总览</Button></span>}>
             <Row gutter={12}>
               <Col span={14}><DimAchieveChart dim={dim} /></Col>
               <Col span={10}>
@@ -159,7 +163,7 @@ export default function Home() {
 
       {/* 分行行长：本行重大项目督办前置；总行行长：经营趋势+结构 */}
       {isBranch ? (
-        <Card size="small" title={`${branchName}重大项目督办（${branchProjects.length}）`} style={{ marginTop: 10 }} extra={<Button size="small" type="primary" onClick={() => nav('sup-task')}>全部重大项目督办 →</Button>}>
+        <Card size="small" title={`${branchName}重大项目督办`} style={{ marginTop: 10 }} extra={<Button size="small" type="primary" onClick={() => nav('sup-task')}>重大项目督办</Button>}>
           <Table
             size="small" pagination={false} rowKey="id" dataSource={branchProjects}
             columns={[
@@ -167,7 +171,7 @@ export default function Home() {
               { title: '关注', dataIndex: 'attention', width: 130, render: (v: string) => <Tag color={v.includes('行长') || v.includes('董事长') ? 'red' : 'default'}>{v}</Tag> },
               { title: '进度', dataIndex: 'progress', width: 150, render: (v: number) => <Progress percent={v} size="small" /> },
               { title: '未决', width: 90, render: (_, r) => { const m = r as unknown as { pendings: Array<{ st: string }> }; const n = m.pendings.filter((x) => x.st !== '已办结').length; return <Tag color={n ? 'orange' : 'green'}>{n ? `${n}项待办` : '已清零'}</Tag>; } },
-              { title: '操作', width: 100, render: (_, r) => <Button size="small" onClick={() => setOpenId((r as { groupId: string }).groupId)}>穿透360</Button> },
+              { title: '操作', width: 100, render: (_, r) => <Button size="small" onClick={() => setOpenId((r as { groupId: string }).groupId)}>客户360</Button> },
             ]}
           />
         </Card>
